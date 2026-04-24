@@ -1,0 +1,882 @@
+openapi: 3.0.3
+info:
+  title: Event Management and Ticket Booking API
+  version: "1.0.0"
+  description: |
+    Event Management and Ticket Booking API.
+
+    Users can:
+    - Browse events
+    - Book tickets
+    - Manage their bookings
+
+    Admins can:
+    - Manage venues
+    - Manage events
+
+    Authentication uses JWT with role-based and ownership-based authorization.
+
+servers:
+  - url: http://localhost:3000/api-docs
+    description: Local development
+  - url: https://your-render-url.onrender.com
+    description: Render deployment
+
+tags:
+  - name: Auth
+  - name: Venues
+  - name: Events
+  - name: Bookings
+
+paths:
+  /api/auth/signup:
+    post:
+      tags: [Auth]
+      summary: User signup
+      description: Create a new user account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthCredentials'
+            example:
+              email: user@example.com
+              password: Password123!
+      responses:
+        '201':
+          description: User successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+              example:
+                id: 12
+                email: user@example.com
+                role: USER
+        '400':
+          description: Missing or invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Missing email or password
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Email already exists
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: User login
+      description: Authenticate a user and return a JWT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthCredentials'
+            example:
+              email: user@example.com
+              password: Password123!
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+              example:
+                token: jwt.token.here
+        '400':
+          description: Missing email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Missing email or password
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Invalid credentials
+
+  /api/venues:
+    post:
+      tags: [Venues]
+      summary: Create a new venue
+      description: Create a new venue (ADMIN only).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VenueCreate'
+            example:
+              name: Main Hall
+              address: 123 Main St
+              city: Charlotte
+              capacity: 500
+      responses:
+        '201':
+          description: Venue created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueSummary'
+              example:
+                id: 3
+                name: Main Hall
+                city: Charlotte
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Invalid input
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Missing or invalid token
+        '403':
+          description: Not authorized (not an admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Forbidden
+
+  /api/venues/{id}:
+    get:
+      tags: [Venues]
+      summary: Get venue by ID
+      description: Retrieve a single venue by ID (public).
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '200':
+          description: Venue found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Venue'
+              example:
+                idVenue: 1
+                name: Main Hall
+                address: 123 Main St
+                city: Charlotte
+                capacity: 500
+                createdAt: 2026-03-27T14:00:00Z
+                updatedAt: 2026-03-27T14:00:00Z
+        '400':
+          description: Invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Invalid ID
+        '404':
+          description: Venue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Venue not found
+    put:
+      tags: [Venues]
+      summary: Update venue
+      description: Update an existing venue (ADMIN only).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VenueUpdate'
+            example:
+              name: Updated Hall
+              address: 456 New St
+              city: Charlotte
+              capacity: 600
+      responses:
+        '200':
+          description: Venue updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Venue'
+        '400':
+          description: Invalid input or ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Venue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Venues]
+      summary: Delete venue
+      description: Delete a venue (ADMIN only).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '204':
+          description: Venue deleted
+        '400':
+          description: Invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Venue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/events:
+    get:
+      tags: [Events]
+      summary: Get all events
+      description: Retrieve all events (public).
+      responses:
+        '200':
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+              example:
+                - idEvent: 10
+                  title: Music Festival
+                  description: Outdoor concert event
+                  startTime: 2026-05-01T18:00:00Z
+                  endTime: 2026-05-01T22:00:00Z
+                  venueId: 3
+                - idEvent: 11
+                  title: Tech Conference
+                  description: Annual technology conference
+                  startTime: 2026-06-10T09:00:00Z
+                  endTime: 2026-06-10T17:00:00Z
+                  venueId: 2
+    post:
+      tags: [Events]
+      summary: Create event
+      description: Create a new event (ADMIN only).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventCreate'
+            example:
+              title: Music Festival
+              description: Outdoor concert event
+              startTime: 2026-05-01T18:00:00Z
+              endTime: 2026-05-01T22:00:00Z
+              venueId: 3
+      responses:
+        '201':
+          description: Event created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+              example:
+                id: 10
+                title: Music Festival
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/events/{id}:
+    get:
+      tags: [Events]
+      summary: Get event by ID
+      description: Retrieve a single event (public).
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '200':
+          description: Event found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          description: Invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags: [Events]
+      summary: Update event
+      description: Update an event (ADMIN only).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventUpdate'
+      responses:
+        '200':
+          description: Event updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          description: Invalid input or ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Events]
+      summary: Delete event
+      description: Delete an event (ADMIN only).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '204':
+          description: Event deleted
+        '400':
+          description: Invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/bookings:
+    get:
+      tags: [Bookings]
+      summary: Get bookings
+      description: |
+        Retrieve bookings for the authenticated user.
+
+        - USER → only their own bookings
+        - ADMIN → all bookings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags: [Bookings]
+      summary: Create booking
+      description: Create a booking for an event (authenticated USER).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCreate'
+            example:
+              eventId: 10
+              numTickets: 2
+      responses:
+        '201':
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingSummary'
+              example:
+                id: 55
+                eventId: 10
+                numTickets: 2
+                status: CONFIRMED
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/bookings/{id}:
+    get:
+      tags: [Bookings]
+      summary: Get booking by ID
+      description: Retrieve a single booking (owner or ADMIN).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '200':
+          description: Booking found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+          description: Invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags: [Bookings]
+      summary: Update booking
+      description: Update a booking (e.g., change ticket count). Owner only.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingUpdate'
+            example:
+              numTickets: 3
+      responses:
+        '200':
+          description: Booking updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+          description: Invalid input or ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Bookings]
+      summary: Cancel booking
+      description: Cancel a booking (owner only).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '204':
+          description: Booking canceled
+        '400':
+          description: Invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdPathParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      description: Numeric ID of the resource
+
+  schemas:
+    AuthCredentials:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    UserPublic:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        role:
+          type: string
+          enum: [USER, ADMIN]
+
+    Venue:
+      type: object
+      properties:
+        idVenue:
+          type: integer
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        capacity:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    VenueCreate:
+      type: object
+      required: [name, address, city, capacity]
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        capacity:
+          type: integer
+
+    VenueUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        capacity:
+          type: integer
+
+    VenueSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        city:
+          type: string
+
+    Event:
+      type: object
+      properties:
+        idEvent:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        venueId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    EventCreate:
+      type: object
+      required: [title, description, startTime, endTime, venueId]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        venueId:
+          type: integer
+
+    EventUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        venueId:
+          type: integer
+
+    Booking:
+      type: object
+      properties:
+        idBooking:
+          type: integer
+        userId:
+          type: integer
+        eventId:
+          type: integer
+        numTickets:
+          type: integer
+        status:
+          type: string
+          enum: [CONFIRMED, CANCELED]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    BookingCreate:
+      type: object
+      required: [eventId, numTickets]
+      properties:
+        eventId:
+          type: integer
+        numTickets:
+          type: integer
+
+    BookingUpdate:
+      type: object
+      required: [numTickets]
+      properties:
+        numTickets:
+          type: integer
+
+    BookingSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        numTickets:
+          type: integer
+        status:
+          type: string
+          enum: [CONFIRMED, CANCELED]
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
