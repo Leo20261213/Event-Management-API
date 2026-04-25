@@ -7,56 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  idUser       Int      @id @default(autoincrement())
-  email        String   @unique
-  passwordHash String
-  role         Role     @default(USER)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  bookings Booking[]
-}
-
-model Venue {
-  idVenue   Int      @id @default(autoincrement())
-  name      String
-  address   String
-  city      String
-  capacity  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  events Event[]
-}
-
-model Event {
-  idEvent     Int      @id @default(autoincrement())
-  title       String
-  description String
-  startTime   DateTime
-  endTime     DateTime
-  venueId     Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  venue    Venue     @relation(fields: [venueId], references: [idVenue])
-  bookings Booking[] // ✅ THIS FIXES YOUR ERROR
-}
-
-model Booking {
-  idBooking  Int           @id @default(autoincrement())
-  userId     Int
-  eventId    Int
-  numTickets Int
-  status     BookingStatus @default(CONFIRMED)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-
-  user  User  @relation(fields: [userId], references: [idUser])
-  event Event @relation(fields: [eventId], references: [idEvent])
-}
-
 enum Role {
   USER
   ADMIN
@@ -65,4 +15,56 @@ enum Role {
 enum BookingStatus {
   CONFIRMED
   CANCELED
+}
+
+model User {
+  idUser      Int       @id @default(autoincrement())
+  email       String    @unique
+  passwordHash String
+  role        Role      @default(USER)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  bookings    Booking[]
+}
+
+model Venue {
+  idVenue   Int       @id @default(autoincrement())
+  name      String
+  address   String
+  city      String
+  capacity  Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  events    Event[]
+}
+
+model Event {
+  idEvent    Int       @id @default(autoincrement())
+  title      String
+  description String
+  startTime  DateTime
+  endTime    DateTime
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  venueId    Int
+  venue      Venue     @relation(fields: [venueId], references: [idVenue])
+
+  bookings   Booking[]
+}
+
+model Booking {
+  idBooking  Int            @id @default(autoincrement())
+  numTickets Int
+  status     BookingStatus  @default(CONFIRMED)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  userId     Int
+  eventId    Int
+
+  user       User   @relation(fields: [userId], references: [idUser])
+  event      Event  @relation(fields: [eventId], references: [idEvent])
 }

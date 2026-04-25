@@ -1,63 +1,93 @@
-import prisma from '../src/prismaClient.js';
-import bcrypt from 'bcrypt';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 async function main() {
-  const password = await bcrypt.hash('Password123!', 10);
-
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
-    update: {},
-    create: {
+  // Users
+  const admin = await prisma.user.create({
+    data: {
       email: 'admin@example.com',
-      password,
-      role: 'ADMIN'
-    }
+      passwordHash: 'hashed_admin_password',
+      role: 'ADMIN',
+    },
   });
 
-  const user = await prisma.user.upsert({
-    where: { email: 'user@example.com' },
-    update: {},
-    create: {
+  const user = await prisma.user.create({
+    data: {
       email: 'user@example.com',
-      password,
-      role: 'USER'
-    }
+      passwordHash: 'hashed_user_password',
+      role: 'USER',
+    },
   });
 
-  const venue = await prisma.venue.create({
+  // Venues
+  const mainHall = await prisma.venue.create({
     data: {
       name: 'Main Hall',
       address: '123 Main St',
       city: 'Charlotte',
-      capacity: 500
-    }
+      capacity: 500,
+    },
   });
 
-  const event = await prisma.event.create({
+  const techCenter = await prisma.venue.create({
+    data: {
+      name: 'Tech Center',
+      address: '456 Innovation Way',
+      city: 'Charlotte',
+      capacity: 300,
+    },
+  });
+
+  // Events
+  const musicFestival = await prisma.event.create({
     data: {
       title: 'Music Festival',
       description: 'Outdoor concert event',
       startTime: new Date('2026-05-01T18:00:00Z'),
       endTime: new Date('2026-05-01T22:00:00Z'),
-      venueId: venue.idVenue
-    }
+      venueId: mainHall.idVenue,
+    },
+  });
+
+  const techConference = await prisma.event.create({
+    data: {
+      title: 'Tech Conference',
+      description: 'Annual technology conference',
+      startTime: new Date('2026-06-10T09:00:00Z'),
+      endTime: new Date('2026-06-10T17:00:00Z'),
+      venueId: techCenter.idVenue,
+    },
+  });
+
+  // Bookings
+  await prisma.booking.create({
+    data: {
+      userId: user.idUser,
+      eventId: musicFestival.idEvent,
+      numTickets: 2,
+      status: 'CONFIRMED',
+    },
   });
 
   await prisma.booking.create({
     data: {
       userId: user.idUser,
-      eventId: event.idEvent,
-      numTickets: 2,
-      status: 'CONFIRMED'
-    }
+      eventId: techConference.idEvent,
+      numTickets: 1,
+      status: 'CONFIRMED',
+    },
   });
+
+  console.log('Seed data inserted successfully');
 }
 
 main()
-  .catch(e => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
+  .then(async () => {
     await prisma.$disconnect();
-});
+  })
+  .catch(async (e) => {
+    console.error(e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });
