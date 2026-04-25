@@ -6,8 +6,7 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon --env-file=.env src/server.js",
-    "start": "node src/server.js",
-    "postinstall": "npx prisma generate && node prisma/seed.js"
+    "start": "node src/server.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
