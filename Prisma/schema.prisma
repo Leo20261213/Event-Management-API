@@ -18,53 +18,54 @@ enum BookingStatus {
 }
 
 model User {
-  idUser      Int       @id @default(autoincrement())
-  email       String    @unique
+  idUser       Int      @id @default(autoincrement())
+  email        String   @unique
   passwordHash String
-  role        Role      @default(USER)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  bookings    Booking[]
+  bookings     Booking[]
 }
 
 model Venue {
-  idVenue   Int       @id @default(autoincrement())
+  idVenue   Int      @id @default(autoincrement())
   name      String
   address   String
   city      String
   capacity  Int
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   events    Event[]
 }
 
 model Event {
-  idEvent    Int       @id @default(autoincrement())
-  title      String
+  idEvent     Int      @id @default(autoincrement())
+  title       String
   description String
-  startTime  DateTime
-  endTime    DateTime
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  startTime   DateTime
+  endTime     DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  venueId    Int
-  venue      Venue     @relation(fields: [venueId], references: [idVenue])
+  venueId     Int
+  venue       Venue    @relation(fields: [venueId], references: [idVenue])
 
-  bookings   Booking[]
+  bookings    Booking[]
 }
 
 model Booking {
   idBooking  Int            @id @default(autoincrement())
+  userId     Int
+  eventId    Int
   numTickets Int
   status     BookingStatus  @default(CONFIRMED)
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
 
-  userId     Int
-  eventId    Int
-
   user       User   @relation(fields: [userId], references: [idUser])
   event      Event  @relation(fields: [eventId], references: [idEvent])
+
+  @@unique([userId, eventId])
 }

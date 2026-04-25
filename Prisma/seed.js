@@ -1,28 +1,40 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // Users
-  const admin = await prisma.user.create({
-    data: {
+  // 🔐 Hash passwords
+  const adminPassword = await bcrypt.hash('Password123!', 10);
+  const userPassword = await bcrypt.hash('Password123!', 10);
+
+  // 👤 USERS
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@example.com' },
+    update: {},
+    create: {
       email: 'admin@example.com',
-      passwordHash: 'hashed_admin_password',
+      passwordHash: adminPassword,
       role: 'ADMIN',
     },
   });
 
-  const user = await prisma.user.create({
-    data: {
+  const user = await prisma.user.upsert({
+    where: { email: 'user@example.com' },
+    update: {},
+    create: {
       email: 'user@example.com',
-      passwordHash: 'hashed_user_password',
+      passwordHash: userPassword,
       role: 'USER',
     },
   });
 
-  // Venues
-  const mainHall = await prisma.venue.create({
-    data: {
+  // 🏢 VENUES (✅ FIXED HERE)
+  const mainHall = await prisma.venue.upsert({
+    where: { idVenue: 1 }, // ✅ FIX
+    update: {},
+    create: {
+      idVenue: 1,
       name: 'Main Hall',
       address: '123 Main St',
       city: 'Charlotte',
@@ -30,8 +42,11 @@ async function main() {
     },
   });
 
-  const techCenter = await prisma.venue.create({
-    data: {
+  const techCenter = await prisma.venue.upsert({
+    where: { idVenue: 2 }, // ✅ FIX
+    update: {},
+    create: {
+      idVenue: 2,
       name: 'Tech Center',
       address: '456 Innovation Way',
       city: 'Charlotte',
@@ -39,7 +54,7 @@ async function main() {
     },
   });
 
-  // Events
+  // 🎉 EVENTS
   const musicFestival = await prisma.event.create({
     data: {
       title: 'Music Festival',
@@ -60,7 +75,7 @@ async function main() {
     },
   });
 
-  // Bookings
+  // 🎟 BOOKINGS
   await prisma.booking.create({
     data: {
       userId: user.idUser,
@@ -79,7 +94,7 @@ async function main() {
     },
   });
 
-  console.log('Seed data inserted successfully');
+  console.log('✅ Seed data inserted successfully');
 }
 
 main()
@@ -87,7 +102,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error(e);
+    console.error('❌ Seed failed:', e);
     await prisma.$disconnect();
     process.exit(1);
   });
