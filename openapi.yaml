@@ -19,7 +19,7 @@ info:
 servers:
   - url: http://localhost:3000/api-docs
     description: Local development
-  - url: https://your-render-url.onrender.com
+  - url: https://event-management-api-rj7d.onrender.com/
     description: Render deployment
 
 tags:
