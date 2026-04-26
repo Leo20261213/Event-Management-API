@@ -4,29 +4,38 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
+  // 🔹 Test DB connection first
+  try {
+    await prisma.$connect();
+    console.log('Connected to database');
+  } catch (err) {
+    console.error('Database connection failed:', err.message);
+    process.exit(1);
+  }
+
   // --- Users ---
   const passwordAdmin = await bcrypt.hash('Admin123!', 10);
   const passwordUser = await bcrypt.hash('User123!', 10);
 
-    const admin = await prisma.user.upsert({
+  const admin = await prisma.user.upsert({
     where: { email: 'admin@example.com' },
     update: {},
     create: {
-        email: 'admin@example.com',
-        passwordHash: passwordAdmin,
-        role: 'ADMIN',
+      email: 'admin@example.com',
+      passwordHash: passwordAdmin,
+      role: 'ADMIN',
     },
-    });
+  });
 
-    const user = await prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { email: 'user@example.com' },
     update: {},
     create: {
-        email: 'user@example.com',
-        passwordHash: passwordUser,
-        role: 'USER',
+      email: 'user@example.com',
+      passwordHash: passwordUser,
+      role: 'USER',
     },
-    });
+  });
 
   // --- Venues ---
   const venue1 = await prisma.venue.create({
