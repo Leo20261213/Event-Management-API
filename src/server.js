@@ -66,11 +66,11 @@ app.get('/', async (req, res) => {
 // ✅ Handle favicon requests gracefully
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-// ✅ 404 fallback
-app.use((req, res) => {
+// ✅ Catch‑all for undefined routes (404)
+app.all('*', (req, res) => {
   res.status(404).json({
     error: {
-      message: 'Route not found. Check /api-docs for available endpoints.',
+      message: `Route '${req.originalUrl}' not found. Check /api-docs for available endpoints.`,
       status: 404
     }
   });
