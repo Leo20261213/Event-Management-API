@@ -14,6 +14,7 @@ import bookingRoutes from './routes/bookingRoutes.js';
 const app = express();
 const PORT = process.env.PORT || 8000;
 
+// ✅ Connect to Prisma
 (async () => {
   try {
     await prisma.$connect();
@@ -23,33 +24,35 @@ const PORT = process.env.PORT || 8000;
   }
 })();
 
+// ✅ Middleware
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 if (process.env.NODE_ENV !== 'test') app.use(morgan('tiny'));
 
-let specs;
+// ✅ Load Swagger spec safely
+let specs = {};
 try {
   specs = yaml.load(fs.readFileSync('./openapi.yaml', 'utf8'));
 } catch (error) {
-  console.log('Warning: Failed to load OpenAPI specification:', error.message);
-  specs = {};
+  console.warn('Warning: Failed to load OpenAPI specification:', error.message);
 }
-
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
+// ✅ Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/venues', venueRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/bookings', bookingRoutes);
 
+// ✅ Root route for Render health checks
 app.get('/', async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     res.json({
       status: 'ok',
       database: 'connected',
-      message: 'Event API is running. Use /docs for endpoints.'
+      message: 'Event‑Management‑API is running. Use /api-docs for endpoints.'
     });
   } catch (err) {
     res.status(500).json({
@@ -60,19 +63,28 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.use((req, res, next) => {
-  const err = new Error('Not Found');
-  err.status = 404;
-  next(err);
-})
+// ✅ Handle favicon requests gracefully
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  const status = err.status || 500;
-  const message = err.message || 'Internal Server Error';
-  res.status(status).json({ error: { message, status } });
+// ✅ 404 fallback
+app.use((req, res) => {
+  res.status(404).json({
+    error: {
+      message: 'Route not found. Check /api-docs for available endpoints.',
+      status: 404
+    }
+  });
 });
 
+// ✅ Global error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    error: { message: err.message || 'Internal Server Error', status: err.status || 500 }
+  });
+});
+
+// ✅ Start server
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
 }
