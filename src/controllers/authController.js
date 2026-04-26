@@ -31,8 +31,12 @@ export async function signup(req, res) {
       email: user.email,
       role: user.role
     });
-  } catch {
-    res.status(500).json({ error: 'Internal server error' });
+  } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(409).json({ error: 'Email already exists' });
+    }
+    console.error('Signup error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
