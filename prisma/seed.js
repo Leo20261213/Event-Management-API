@@ -4,37 +4,33 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  // 🔐 Hash passwords
-  const adminPassword = await bcrypt.hash('Password123!', 10);
-  const userPassword = await bcrypt.hash('Password123!', 10);
+  // --- Users ---
+  const passwordAdmin = await bcrypt.hash('Admin123!', 10);
+  const passwordUser = await bcrypt.hash('User123!', 10);
 
-  // 👤 USERS
-  const admin = await prisma.user.upsert({
+    const admin = await prisma.user.upsert({
     where: { email: 'admin@example.com' },
     update: {},
     create: {
-      email: 'admin@example.com',
-      passwordHash: adminPassword,
-      role: 'ADMIN',
+        email: 'admin@example.com',
+        passwordHash: passwordAdmin,
+        role: 'ADMIN',
     },
-  });
+    });
 
-  const user = await prisma.user.upsert({
+    const user = await prisma.user.upsert({
     where: { email: 'user@example.com' },
     update: {},
     create: {
-      email: 'user@example.com',
-      passwordHash: userPassword,
-      role: 'USER',
+        email: 'user@example.com',
+        passwordHash: passwordUser,
+        role: 'USER',
     },
-  });
+    });
 
-  // 🏢 VENUES (✅ FIXED HERE)
-  const mainHall = await prisma.venue.upsert({
-    where: { idVenue: 1 }, // ✅ FIX
-    update: {},
-    create: {
-      idVenue: 1,
+  // --- Venues ---
+  const venue1 = await prisma.venue.create({
+    data: {
       name: 'Main Hall',
       address: '123 Main St',
       city: 'Charlotte',
@@ -42,11 +38,8 @@ async function main() {
     },
   });
 
-  const techCenter = await prisma.venue.upsert({
-    where: { idVenue: 2 }, // ✅ FIX
-    update: {},
-    create: {
-      idVenue: 2,
+  const venue2 = await prisma.venue.create({
+    data: {
       name: 'Tech Center',
       address: '456 Innovation Way',
       city: 'Charlotte',
@@ -54,32 +47,32 @@ async function main() {
     },
   });
 
-  // 🎉 EVENTS
-  const musicFestival = await prisma.event.create({
+  // --- Events ---
+  const event1 = await prisma.event.create({
     data: {
       title: 'Music Festival',
       description: 'Outdoor concert event',
       startTime: new Date('2026-05-01T18:00:00Z'),
       endTime: new Date('2026-05-01T22:00:00Z'),
-      venueId: mainHall.idVenue,
+      venueId: venue1.idVenue,
     },
   });
 
-  const techConference = await prisma.event.create({
+  const event2 = await prisma.event.create({
     data: {
       title: 'Tech Conference',
       description: 'Annual technology conference',
       startTime: new Date('2026-06-10T09:00:00Z'),
       endTime: new Date('2026-06-10T17:00:00Z'),
-      venueId: techCenter.idVenue,
+      venueId: venue2.idVenue,
     },
   });
 
-  // 🎟 BOOKINGS
+  // --- Bookings ---
   await prisma.booking.create({
     data: {
       userId: user.idUser,
-      eventId: musicFestival.idEvent,
+      eventId: event1.idEvent,
       numTickets: 2,
       status: 'CONFIRMED',
     },
@@ -88,13 +81,13 @@ async function main() {
   await prisma.booking.create({
     data: {
       userId: user.idUser,
-      eventId: techConference.idEvent,
+      eventId: event2.idEvent,
       numTickets: 1,
       status: 'CONFIRMED',
     },
   });
 
-  console.log('✅ Seed data inserted successfully');
+  console.log('Database seeded successfully!');
 }
 
 main()
@@ -102,7 +95,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error('❌ Seed failed:', e);
+    console.error(e);
     await prisma.$disconnect();
     process.exit(1);
   });
