@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,68 +8,57 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(USER)
-  bookings  Booking[]
-  events    Event[]  @relation("OrganizerEvents")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  idUser       Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  bookings     Booking[]
 }
 
 model Venue {
-  id        Int      @id @default(autoincrement())
+  idVenue   Int      @id @default(autoincrement())
   name      String
-  location  String
+  address   String
+  city      String
   capacity  Int
-  events    Event[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  events    Event[]
 }
 
 model Event {
-  id          Int      @id @default(autoincrement())
+  idEvent     Int      @id @default(autoincrement())
   title       String
-  description String?
-  date        DateTime
+  description String
+  startTime   DateTime
+  endTime     DateTime
   venueId     Int
-  organizerId Int
-  venue       Venue     @relation(fields: [venueId], references: [id])
-  organizer   User      @relation("OrganizerEvents", fields: [organizerId], references: [id])
-  bookings    Booking[]
-  status      EventStatus @default(UPCOMING)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  venue       Venue     @relation(fields: [venueId], references: [idVenue])
+  bookings    Booking[]
 }
 
 model Booking {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  eventId   Int
-  tickets   Int
-  status    BookingStatus @default(PENDING)
-  user      User     @relation(fields: [userId], references: [id])
-  event     Event    @relation(fields: [eventId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  idBooking  Int           @id @default(autoincrement())
+  userId     Int
+  eventId    Int
+  numTickets Int
+  status     BookingStatus @default(CONFIRMED)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  user       User  @relation(fields: [userId], references: [idUser])
+  event      Event @relation(fields: [eventId], references: [idEvent])
 }
 
 enum Role {
   USER
-  ORGANIZER
   ADMIN
 }
 
-enum EventStatus {
-  UPCOMING
-  COMPLETED
-  CANCELLED
-}
-
 enum BookingStatus {
-  PENDING
   CONFIRMED
-  CANCELLED
+  CANCELED
 }
