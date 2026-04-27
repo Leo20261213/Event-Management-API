@@ -1,13 +1,18 @@
-const swaggerUi = require("swagger-ui-express");
-const YAML = require("yamljs");
-const path = require("path");
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const filePath = path.join(process.cwd(), "openapi.yaml");
+// ✅ Resolve absolute path for openapi.yaml
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const filePath = path.join(__dirname, '../openapi.yaml');
 
-console.log("Looking for OpenAPI file at:", filePath);
+console.log('Looking for OpenAPI file at:', filePath);
 
 const swaggerDocument = YAML.load(filePath);
 
-module.exports = (app) => {
-  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-};
+// ✅ Export as default for ES module import
+export default function swaggerSetup(app) {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}

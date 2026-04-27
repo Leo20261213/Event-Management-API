@@ -3,6 +3,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
+import swaggerSetup from './swagger.js';
 import yaml from 'js-yaml';
 import fs from 'fs';
 import prisma from './prismaClient.js';
@@ -29,6 +30,9 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 if (process.env.NODE_ENV !== 'test') app.use(morgan('tiny'));
+
+// ✅ Initialize Swagger UI
+swaggerSetup(app);
 
 // ✅ Load Swagger spec safely
 let specs = {};
