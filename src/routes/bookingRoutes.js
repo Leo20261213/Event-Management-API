@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate } from '../middleware/authMiddleware.js';
 import { validateIdParam } from '../middleware/validation.js';
 import {
   createBooking,
@@ -11,33 +11,41 @@ import {
 
 const router = express.Router();
 
-// POST /api/bookings (USER)
-router.post('/', authenticate, createBooking);
+// CREATE BOOKING (USER)
+router.post(
+  '/', 
+  authenticate, 
+  createBooking
+);
 
-// GET /api/bookings (USER → own, ADMIN → all)
-router.get('/', authenticate, getBookings);
-
-// GET /api/bookings/:id (owner or ADMIN)
+// GET BOOKINGS (USER → own, ADMIN → all)
 router.get(
-  '/:idBooking',
-  authenticate,
-  validateIdParam('idBooking'),
+  '/', 
+  authenticate, 
+  getBookings
+);
+
+// GET BOOKING BY ID (OWNER or ADMIN)
+router.get(
+  '/:idBooking', 
+  authenticate, 
+  validateIdParam('idBooking'), 
   getBookingById
 );
 
-// PUT /api/bookings/:id (owner only)
+// UPDATE BOOKING (OWNER ONLY)
 router.put(
-  '/:idBooking',
-  authenticate,
-  validateIdParam('idBooking'),
+  '/:idBooking', 
+  authenticate, 
+  validateIdParam('idBooking'), 
   updateBooking
 );
 
-// DELETE /api/bookings/:id (owner only)
+// DELETE BOOKING (OWNER ONLY)
 router.delete(
-  '/:idBooking',
-  authenticate,
-  validateIdParam('idBooking'),
+  '/:idBooking', 
+  authenticate, 
+  validateIdParam('idBooking'), 
   deleteBooking
 );
 

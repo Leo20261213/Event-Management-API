@@ -11,7 +11,7 @@ import {
 
 const router = express.Router();
 
-// POST /api/events (ADMIN)
+// CREATE EVENT (ADMIN)
 router.post(
   '/',
   authenticate,
@@ -19,17 +19,17 @@ router.post(
   createEvent
 );
 
-// GET /api/events (public)
+// GET ALL EVENTS (PUBLIC)
 router.get('/', getAllEvents);
 
-// GET /api/events/:id (public)
+// GET EVENT BY ID (PUBLIC)
 router.get(
   '/:idEvent',
   validateIdParam('idEvent'),
   getEventById
 );
 
-// PUT /api/events/:id (ADMIN)
+// UPDATE EVENT (ADMIN)
 router.put(
   '/:idEvent',
   authenticate,
@@ -38,7 +38,7 @@ router.put(
   updateEvent
 );
 
-// DELETE /api/events/:id (ADMIN)
+// DELETE EVENT (ADMIN)
 router.delete(
   '/:idEvent',
   authenticate,

@@ -4,6 +4,7 @@ import prisma from '../prismaClient.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+// --- SIGNUP ---
 export async function signup(req, res) {
   const { email, password } = req.body;
 
@@ -21,8 +22,8 @@ export async function signup(req, res) {
     const user = await prisma.user.create({
       data: {
         email,
-        password: hash,
-        role: 'USER'
+        passwordHash: hash,
+        role: req.body.role || 'USER'
       }
     });
 
@@ -32,14 +33,15 @@ export async function signup(req, res) {
       role: user.role
     });
   } catch (error) {
-    if (error.code === 'P2002') {
-      return res.status(409).json({ error: 'Email already exists' });
-    }
-    console.error('Signup error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Signup error details:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      details: error.message
+    });
   }
 }
 
+// --- LOGIN ---
 export async function login(req, res) {
   const { email, password } = req.body;
 
@@ -48,29 +50,37 @@ export async function login(req, res) {
   }
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { idUser: true, email: true, passwordHash: true, role: true }
+    });
+
     console.log('User found:', user);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const match = await bcrypt.compare(password, user.password);
+    const match = await bcrypt.compare(password, user.passwordHash);
     console.log('Password match result:', match);
 
     if (!match) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign(
-      { sub: user.idUser, role: user.role },
-      JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+    // ✅ Token now includes `sub` for bookingController
+      const token = jwt.sign(
+    { sub: user.idUser, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '12h' }   // or '7d', '30d', etc.
+  );
 
     res.status(200).json({ token });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Login error details:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      details: error.message
+    });
   }
 }

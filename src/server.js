@@ -3,19 +3,28 @@ import morgan from 'morgan';
 import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
-import swaggerSetup from './swagger.js';
 import yaml from 'js-yaml';
 import fs from 'fs';
+
 import prisma from './prismaClient.js';
+
+// Route imports
 import authRoutes from './routes/authRoutes.js';
 import venueRoutes from './routes/venueRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
+import userRoutes from './routes/userRoutes.js'; // ✅ ensure this file exists
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 3000;
 
-// ✅ Connect to Prisma
+// --- Middleware ---
+app.use(express.json());
+app.use(cors());
+app.use(helmet());
+app.use(morgan('dev'));
+
+// --- Connect to Prisma ---
 (async () => {
   try {
     await prisma.$connect();
@@ -25,53 +34,30 @@ const PORT = process.env.PORT || 8000;
   }
 })();
 
-// ✅ Middleware
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
-if (process.env.NODE_ENV !== 'test') app.use(morgan('tiny'));
-
-// ✅ Initialize Swagger UI
-swaggerSetup(app);
-
-// ✅ Load Swagger spec safely
-let specs = {};
-try {
-  specs = yaml.load(fs.readFileSync('./openapi.yaml', 'utf8'));
-} catch (error) {
-  console.warn('Warning: Failed to load OpenAPI specification:', error.message);
+// --- Swagger setup ---
+const openapiPath = './openapi.yaml';
+if (fs.existsSync(openapiPath)) {
+  const openapiDocument = yaml.load(fs.readFileSync(openapiPath, 'utf8'));
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiDocument));
+  console.log(`Loaded OpenAPI file at: ${openapiPath}`);
+} else {
+  console.warn('OpenAPI file not found at:', openapiPath);
 }
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
-// ✅ Mount routes
+// --- Routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/venues', venueRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/users', userRoutes); // ✅ mounts /api/users/me
 
-// ✅ Root route for Render health checks
-app.get('/', async (req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.json({
-      status: 'ok',
-      database: 'connected',
-      message: 'Event‑Management‑API is running. Use /api-docs for endpoints.'
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: 'error',
-      database: 'disconnected',
-      message: 'Server is up but database connection failed.'
-    });
-  }
+// --- Default route ---
+app.get('/', (req, res) => {
+  res.json({ message: 'Server is running!' });
 });
 
-// ✅ Handle favicon requests gracefully
-app.get('/favicon.ico', (req, res) => res.status(204).end());
-
-// ✅ Catch‑all for undefined routes (404)
-app.all('*', (req, res) => {
+// --- 404 handler ---
+app.use((req, res) => {
   res.status(404).json({
     error: {
       message: `Route '${req.originalUrl}' not found. Check /api-docs for available endpoints.`,
@@ -80,17 +66,9 @@ app.all('*', (req, res) => {
   });
 });
 
-// ✅ Global error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    error: { message: err.message || 'Internal Server Error', status: err.status || 500 }
-  });
+// --- Start server ---
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
-
-// ✅ Start server
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
-}
 
 export default app;

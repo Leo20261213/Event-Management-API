@@ -5,10 +5,14 @@ import {
   createVenue,
   getVenueById,
   updateVenue,
-  deleteVenue
+  deleteVenue,
+  getAllVenues
 } from '../controllers/venueController.js';
 
 const router = express.Router();
+
+// GET /api/venues (public)
+router.get('/', getAllVenues);
 
 // POST /api/venues (ADMIN)
 router.post(
@@ -18,14 +22,14 @@ router.post(
   createVenue
 );
 
-// GET /api/venues/:id (public)
+// GET /api/venues/:idVenue (public)
 router.get(
   '/:idVenue',
   validateIdParam('idVenue'),
   getVenueById
 );
 
-// PUT /api/venues/:id (ADMIN)
+// PUT /api/venues/:idVenue (ADMIN)
 router.put(
   '/:idVenue',
   authenticate,
@@ -34,7 +38,7 @@ router.put(
   updateVenue
 );
 
-// DELETE /api/venues/:id (ADMIN)
+// DELETE /api/venues/:idVenue (ADMIN)
 router.delete(
   '/:idVenue',
   authenticate,

@@ -1,15 +1,28 @@
 import prisma from '../prismaClient.js';
 
+// GET all venues
+export async function getAllVenues(req, res) {
+  try {
+    const venues = await prisma.venue.findMany();
+    res.status(200).json(venues);
+  } catch (error) {
+    console.error('getAllVenues error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// POST create venue
 export async function createVenue(req, res) {
   const { name, address, city, capacity } = req.body;
+  const numericCapacity = Number(capacity);
 
-  if (!name || !address || !city || typeof capacity !== 'number') {
+  if (!name || !address || !city || isNaN(numericCapacity)) {
     return res.status(400).json({ error: 'Invalid input' });
   }
 
   try {
     const venue = await prisma.venue.create({
-      data: { name, address, city, capacity }
+      data: { name, address, city, capacity: numericCapacity }
     });
 
     res.status(201).json({
@@ -17,13 +30,15 @@ export async function createVenue(req, res) {
       name: venue.name,
       city: venue.city
     });
-  } catch {
+  } catch (error) {
+    console.error('createVenue error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }
 
+// GET venue by ID
 export async function getVenueById(req, res) {
-  const id = req.params.idVenue;
+  const id = parseInt(req.params.idVenue);
 
   try {
     const venue = await prisma.venue.findUnique({
@@ -35,14 +50,17 @@ export async function getVenueById(req, res) {
     }
 
     res.status(200).json(venue);
-  } catch {
+  } catch (error) {
+    console.error('getVenueById error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }
 
+// PUT update venue
 export async function updateVenue(req, res) {
-  const id = req.params.idVenue;
+  const id = parseInt(req.params.idVenue);
   const { name, address, city, capacity } = req.body;
+  const numericCapacity = Number(capacity);
 
   try {
     const existing = await prisma.venue.findUnique({ where: { idVenue: id } });
@@ -52,17 +70,19 @@ export async function updateVenue(req, res) {
 
     const updated = await prisma.venue.update({
       where: { idVenue: id },
-      data: { name, address, city, capacity }
+      data: { name, address, city, capacity: numericCapacity }
     });
 
     res.status(200).json(updated);
-  } catch {
+  } catch (error) {
+    console.error('updateVenue error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }
 
+// DELETE venue
 export async function deleteVenue(req, res) {
-  const id = req.params.idVenue;
+  const id = parseInt(req.params.idVenue);
 
   try {
     const existing = await prisma.venue.findUnique({ where: { idVenue: id } });
@@ -72,7 +92,8 @@ export async function deleteVenue(req, res) {
 
     await prisma.venue.delete({ where: { idVenue: id } });
     res.status(204).send();
-  } catch {
+  } catch (error) {
+    console.error('deleteVenue error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }

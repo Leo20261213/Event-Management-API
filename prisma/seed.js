@@ -14,28 +14,16 @@ async function main() {
   }
 
   // --- Users ---
-  const passwordAdmin = await bcrypt.hash('Admin123!', 10);
-  const passwordUser = await bcrypt.hash('User123!', 10);
+  const adminHash = await bcrypt.hash('Admin123!', 10);
+  const userHash = await bcrypt.hash('User123!', 10);
 
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
-    update: {},
-    create: {
-      email: 'admin@example.com',
-      passwordHash: passwordAdmin,
-      role: 'ADMIN',
-    },
+  await prisma.user.createMany({
+    data: [
+      { email: 'admin@example.com', passwordHash: adminHash, role: 'ADMIN' },
+      { email: 'user@example.com', passwordHash: userHash, role: 'USER' }
+    ]
   });
-
-  const user = await prisma.user.upsert({
-    where: { email: 'user@example.com' },
-    update: {},
-    create: {
-      email: 'user@example.com',
-      passwordHash: passwordUser,
-      role: 'USER',
-    },
-  });
+  console.log('Users seeded successfully!');
 
   // --- Venues ---
   const venue1 = await prisma.venue.create({
@@ -80,7 +68,7 @@ async function main() {
   // --- Bookings ---
   await prisma.booking.create({
     data: {
-      userId: user.idUser,
+      userId: 2, // user@example.com
       eventId: event1.idEvent,
       numTickets: 2,
       status: 'CONFIRMED',
@@ -89,7 +77,7 @@ async function main() {
 
   await prisma.booking.create({
     data: {
-      userId: user.idUser,
+      userId: 2, // user@example.com
       eventId: event2.idEvent,
       numTickets: 1,
       status: 'CONFIRMED',
