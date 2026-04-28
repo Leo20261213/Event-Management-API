@@ -13,61 +13,101 @@ async function main() {
     process.exit(1);
   }
 
-  // --- Users ---
+  // --- Users (idempotent upsert) ---
   const adminHash = await bcrypt.hash('Admin123!', 10);
   const userHash = await bcrypt.hash('User123!', 10);
 
-  await prisma.user.createMany({
-    data: [
-      { email: 'admin@example.com', passwordHash: adminHash, role: 'ADMIN' },
-      { email: 'user@example.com', passwordHash: userHash, role: 'USER' }
-    ]
+  await prisma.user.upsert({
+    where: { email: 'admin@example.com' },
+    update: {},
+    create: {
+      email: 'admin@example.com',
+      passwordHash: adminHash,
+      role: 'ADMIN',
+    },
   });
+
+  await prisma.user.upsert({
+    where: { email: 'user@example.com' },
+    update: {},
+    create: {
+      email: 'user@example.com',
+      passwordHash: userHash,
+      role: 'USER',
+    },
+  });
+
   console.log('Users seeded successfully!');
 
-  // --- Venues ---
-  const venue1 = await prisma.venue.create({
-    data: {
-      name: 'Main Hall',
-      address: '123 Main St',
-      city: 'Charlotte',
-      capacity: 500,
-    },
+// --- Venues ---
+const existingVenue1 = await prisma.venue.findFirst({
+  where: { name: 'Main Hall' },
+});
+
+const venue1 = existingVenue1
+  ? existingVenue1
+  : await prisma.venue.create({
+      data: {
+        name: 'Main Hall',
+        address: '123 Main St',
+        city: 'Charlotte',
+        capacity: 500,
+      },
+    });
+
+const existingVenue2 = await prisma.venue.findFirst({
+  where: { name: 'Tech Center' },
+});
+
+const venue2 = existingVenue2
+  ? existingVenue2
+  : await prisma.venue.create({
+      data: {
+        name: 'Tech Center',
+        address: '456 Innovation Way',
+        city: 'Charlotte',
+        capacity: 300,
+      },
+    });
+
+    // --- Events ---
+  const existingEvent1 = await prisma.event.findFirst({
+    where: { title: 'Music Festival' },
   });
 
-  const venue2 = await prisma.venue.create({
-    data: {
-      name: 'Tech Center',
-      address: '456 Innovation Way',
-      city: 'Charlotte',
-      capacity: 300,
-    },
+  const event1 = existingEvent1
+    ? existingEvent1
+    : await prisma.event.create({
+        data: {
+          title: 'Music Festival',
+          description: 'Outdoor concert event',
+          startTime: new Date('2026-05-01T18:00:00Z'),
+          endTime: new Date('2026-05-01T22:00:00Z'),
+          venueId: venue1.idVenue,
+        },
+      });
+
+  const existingEvent2 = await prisma.event.findFirst({
+    where: { title: 'Tech Conference' },
   });
 
-  // --- Events ---
-  const event1 = await prisma.event.create({
-    data: {
-      title: 'Music Festival',
-      description: 'Outdoor concert event',
-      startTime: new Date('2026-05-01T18:00:00Z'),
-      endTime: new Date('2026-05-01T22:00:00Z'),
-      venueId: venue1.idVenue,
-    },
-  });
-
-  const event2 = await prisma.event.create({
-    data: {
-      title: 'Tech Conference',
-      description: 'Annual technology conference',
-      startTime: new Date('2026-06-10T09:00:00Z'),
-      endTime: new Date('2026-06-10T17:00:00Z'),
-      venueId: venue2.idVenue,
-    },
-  });
+  const event2 = existingEvent2
+    ? existingEvent2
+    : await prisma.event.create({
+        data: {
+          title: 'Tech Conference',
+          description: 'Annual technology conference',
+          startTime: new Date('2026-06-10T09:00:00Z'),
+          endTime: new Date('2026-06-10T17:00:00Z'),
+          venueId: venue2.idVenue,
+        },
+      });
 
   // --- Bookings ---
-  await prisma.booking.create({
-    data: {
+  await prisma.booking.upsert({
+    where: { idBooking: 1 },
+    update: {},
+    create: {
       userId: 2, // user@example.com
       eventId: event1.idEvent,
       numTickets: 2,
@@ -75,8 +115,10 @@ async function main() {
     },
   });
 
-  await prisma.booking.create({
-    data: {
+  await prisma.booking.upsert({
+    where: { idBooking: 2 },
+    update: {},
+    create: {
       userId: 2, // user@example.com
       eventId: event2.idEvent,
       numTickets: 1,
