@@ -55,7 +55,7 @@ model Booking {
 
   // REQUIRED relations — these MUST match your controllers
   user       User  @relation(fields: [userId], references: [idUser])
-  event      Event @relation(fields: [eventId], references: [idEvent])
+  event      Event @relation(fields: [eventId], references: [idEvent], onDelete: Cascade)
 }
 
 enum Role {

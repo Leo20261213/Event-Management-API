@@ -24,26 +24,26 @@ router.get('/', getAllEvents);
 
 // GET EVENT BY ID (PUBLIC)
 router.get(
-  '/:idEvent',
-  validateIdParam('idEvent'),
+  '/:id',
+  validateIdParam('id'),
   getEventById
 );
 
 // UPDATE EVENT (ADMIN)
 router.put(
-  '/:idEvent',
+  '/:id',
   authenticate,
   requireRole('ADMIN'),
-  validateIdParam('idEvent'),
+  validateIdParam('id'),
   updateEvent
 );
 
 // DELETE EVENT (ADMIN)
 router.delete(
-  '/:idEvent',
+  '/:id',
   authenticate,
   requireRole('ADMIN'),
-  validateIdParam('idEvent'),
+  validateIdParam('id'),
   deleteEvent
 );
 
